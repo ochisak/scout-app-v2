@@ -53,7 +53,7 @@ export default function Home() {
 
   return (
     <main className="max-w-3xl mx-auto py-10 px-4 space-y-6 text-slate-800">
-      <h1 className="text-3xl font-bold text-white">スカウト文自動生成</h1>
+      <h1 className="text-3xl font-bold text-blue-600">スカウト文自動生成</h1>
 
 
       <Section>
