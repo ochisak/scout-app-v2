@@ -1,103 +1,166 @@
-import Image from "next/image";
+'use client'
+
+import React, { useState } from 'react'
+import Section from '../components/Section'
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [job, setJob] = useState('')
+  const [candidate, setCandidate] = useState('')
+  const [templateType, setTemplateType] = useState('oneness')
+  const [result, setResult] = useState('')
+  const [matchScore, setMatchScore] = useState('')
+  const [subject, setSubject] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [matchLoading, setMatchLoading] = useState(false)
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleSubmit = async () => {
+    if (!job || !candidate) {
+      alert('求人情報と候補者情報を両方入力してください。')
+      return
+    }
+
+    setLoading(true)
+    setResult('')
+    setMatchScore('')
+    setSubject('')
+
+    try {
+      const scoutRes = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job, candidate, templateType }),
+      })
+      const scoutData = await scoutRes.json()
+      setResult(scoutData.result)
+      setSubject(scoutData.subject)
+
+      setMatchLoading(true)
+      const matchRes = await fetch('/api/generate-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job, candidate }),
+      })
+      const matchData = await matchRes.json()
+      setMatchScore(matchData.matchScore)
+    } catch (error) {
+      setResult('エラーが発生しました。')
+      setMatchScore('')
+    } finally {
+      setLoading(false)
+      setMatchLoading(false)
+    }
+  }
+
+  return (
+    <main className="max-w-3xl mx-auto py-10 px-4 space-y-6 text-slate-800">
+      <h1 className="text-3xl font-bold text-white">スカウト文自動生成</h1>
+
+
+      <Section>
+        <label className="block font-semibold mb-1 text-slate-800">テンプレート選択</label>
+        <select
+          className="w-full border border-slate-300 p-2 rounded bg-white text-slate-800"
+          value={templateType}
+          onChange={(e) => setTemplateType(e.target.value)}
+        >
+          <option value="oneness">ONENESS用（標準）</option>
+          <option value="casual">カジュアル</option>
+          <option value="cxo">CxO・ハイクラス向け</option>
+          <option value="startup">スタートアップ向け</option>
+          <option value="global">グローバル向け</option>
+        </select>
+      </Section>
+
+      <Section>
+        <label className="block font-semibold mb-1 text-slate-800">求人情報</label>
+        <textarea
+          className="w-full border border-slate-300 p-2 rounded placeholder:text-slate-600 text-slate-800"
+          rows={6}
+          value={job}
+          onChange={(e) => setJob(e.target.value)}
+          placeholder="ここに求人票や会社情報を貼り付けてください"
+        />
+      </Section>
+
+      <Section>
+        <label className="block font-semibold mb-1 text-slate-800">候補者情報</label>
+        <textarea
+          className="w-full border border-slate-300 p-2 rounded placeholder:text-slate-600 text-slate-800"
+          rows={6}
+          value={candidate}
+          onChange={(e) => setCandidate(e.target.value)}
+          placeholder="ここに候補者の職務経歴などを貼り付けてください"
+        />
+      </Section>
+
+      <Section className="flex justify-end">
+        <button
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded transition"
+          onClick={handleSubmit}
+          disabled={loading}
+        >
+          {loading ? '生成中...' : '生成する'}
+        </button>
+      </Section>
+
+      {loading && (
+        <div className="mt-4 flex items-center space-x-2 text-blue-600">
+          <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+          </svg>
+          <span>生成中です。しばらくお待ちください...</span>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+      )}
+
+      {(subject || result || matchScore) && (
+        <Section className="space-y-6">
+          <div className="bg-green-50 border border-green-300 text-green-800 p-4 rounded">
+            <p className="font-semibold">✅ スカウト文が完成しました！</p>
+            <p className="mt-1 text-sm">
+              下記より内容をご確認の上、必要に応じてコピーしてご利用ください。マッチ度フィードバックも参考にご覧ください。
+            </p>
+          </div>
+
+          {subject && (
+            <div>
+              <h2 className="text-lg font-semibold text-blue-600">件名：</h2>
+              <p className="text-slate-800">{subject}</p>
+            </div>
+          )}
+
+          {result && (
+            <div className="bg-white border rounded shadow-sm p-4">
+              <h2 className="text-lg font-semibold mb-2">スカウト文：</h2>
+              <p className="whitespace-pre-wrap text-slate-800">{result}</p>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(result)
+                  alert('スカウト文をコピーしました！')
+                }}
+                className="mt-4 bg-gray-300 text-slate-800 px-3 py-1 rounded hover:bg-gray-400 transition"
+              >
+                コピーする
+              </button>
+            </div>
+          )}
+
+          {matchLoading ? (
+            <div className="flex items-center space-x-2 text-blue-500 text-sm">
+              <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+              <span>マッチ度フィードバックを生成中です...</span>
+            </div>
+          ) : matchScore && (
+            <div className="bg-gray-100 border-l-4 border-blue-400 p-4 text-sm text-slate-800">
+              <h2 className="text-md font-semibold text-blue-700 mb-2">マッチ度フィードバック：</h2>
+              <p className="whitespace-pre-wrap">{matchScore}</p>
+            </div>
+          )}
+        </Section>
+      )}
+    </main>
+  )
 }
