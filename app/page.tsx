@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import Section from './components/Section'
+import Section from '../components/Section'
 
 export default function Home() {
   const [job, setJob] = useState('')
