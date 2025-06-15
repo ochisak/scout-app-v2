@@ -42,7 +42,7 @@ export default function Home() {
       })
       const matchData = await matchRes.json()
       setMatchScore(matchData.matchScore)
-    } catch (error) {
+    } catch {
       setResult('エラーが発生しました。')
       setMatchScore('')
     } finally {
